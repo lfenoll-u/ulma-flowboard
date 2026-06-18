@@ -20,8 +20,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 /* ── HEADER ── */
 .header{background:var(--dark);border-bottom:2px solid var(--red);padding:0 1rem;display:flex;align-items:center;gap:8px;height:52px;flex-shrink:0;z-index:100}
 .logo-mark{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.logo-u{width:30px;height:30px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-1px;flex-shrink:0;position:relative}
-.logo-u-inner{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:14px;height:9px;background:var(--dark);clip-path:polygon(15% 0%,85% 0%,100% 100%,0% 100%)}
+.logo-u{width:30px;height:30px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:#fff;flex-shrink:0}
 .logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:#fff;line-height:1.1}
 .logo-sub{font-size:8px;font-weight:600;letter-spacing:.16em;color:var(--red);text-transform:uppercase}
 .hdiv{width:1px;height:26px;background:#333;flex-shrink:0}
@@ -32,10 +31,6 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 .hbtn:disabled{opacity:.5;cursor:not-allowed}
 .hbtn.primary{background:var(--red);border-color:var(--red);color:#fff}
 .hbtn.primary:hover:not(:disabled){opacity:.88}
-.diagram-title-input{padding:4px 10px;font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;background:#252525;border:1px solid #383838;border-radius:3px;color:#ddd;width:180px;transition:border-color .15s}
-.diagram-title-input:focus{outline:none;border-color:var(--red);color:#fff}
-.diagram-title-input::placeholder{color:#555}
-
 /* ── TOOLBAR ── */
 .toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 .75rem;display:flex;align-items:center;gap:6px;height:40px;flex-shrink:0;z-index:99}
 .tbtn{display:flex;align-items:center;gap:4px;padding:4px 9px;font-size:11px;font-family:'Barlow',sans-serif;font-weight:600;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap}
@@ -102,7 +97,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 .gantt-cell.weekend{background:rgba(0,0,0,.03)}
 
 /* ── BLOCKS ── */
-.g-block{position:absolute;top:5px;height:36px;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;user-select:none;z-index:10;transition:filter .1s}
+.g-block{position:absolute;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;user-select:none;z-index:10;transition:filter .1s}
 .g-block:active{cursor:grabbing}
 .g-block:hover{filter:brightness(1.08)}
 .g-block.selected{outline:2px solid #fff;outline-offset:1px;z-index:15}
@@ -181,13 +176,11 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 <!-- HEADER -->
 <div class="header">
   <div class="logo-mark">
-    <div class="logo-u">U<div class="logo-u-inner"></div></div>
+    <div class="logo-u">U</div>
     <div class="logo-text">ULMA<div class="logo-sub">Handling Systems</div></div>
   </div>
   <div class="hdiv"></div>
   <div class="header-tool">FlowBoard</div>
-  <div class="hdiv"></div>
-  <input class="diagram-title-input" id="diagram-title" type="text" placeholder="Nombre del diagrama…" maxlength="80">
   <div class="header-actions">
     <button class="hbtn primary" id="btn-insert-slide" style="display:none" onclick="insertIntoSlide()">
       <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -363,7 +356,6 @@ async function onPPTSelectionChanged() {
       state.rowH   = saved.rowH  !== undefined ? saved.rowH  : null;
       state.selectedId = null;
       state.history    = [];
-      if (saved.title !== undefined) document.getElementById('diagram-title').value = saved.title;
       syncSizeInputs();
       render();
       showToast('Diagrama cargado desde PPT');
@@ -700,6 +692,8 @@ function renderRows() {
       bEl.dataset.bid = b.id;
       bEl.style.left   = (b.col * cw) + 'px';
       bEl.style.width  = Math.max(cw, b.span * cw) + 'px';
+      bEl.style.top    = '5px';
+      bEl.style.height = (rh - 10) + 'px';
       bEl.style.background = b.color;
 
       // Resize handles
@@ -1257,10 +1251,8 @@ async function buildGanttCanvas(scale, exportW) {
 }
 
 async function exportPNG() {
-  const title = document.getElementById('diagram-title').value.trim() || 'gantt-ulma';
-  const safe  = title.replace(/[^a-zA-Z0-9_\-áéíóúüñÁÉÍÓÚÜÑ ]/g,'').trim().replace(/\s+/g,'-') || 'gantt-ulma';
   const canvas = await buildGanttCanvas(2);
-  const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = safe + '.png'; a.click();
+  const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = 'gantt-ulma.png'; a.click();
 }
 
 async function insertIntoSlide() {
@@ -1294,8 +1286,7 @@ async function insertIntoSlide() {
             shapes.items[0].tags.add('FLOWBOARD_STATE', JSON.stringify({
               rows: state.rows, blocks: state.blocks, vlines: state.vlines,
               axisLevels: state.axisLevels, nextId: state.nextId,
-              cellW: state.cellW, rowH: state.rowH,
-              title: document.getElementById('diagram-title').value.trim()
+              cellW: state.cellW, rowH: state.rowH
             }));
             await context.sync();
           }
