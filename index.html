@@ -160,6 +160,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 .axis-preview{background:var(--dark);border-radius:3px;padding:8px;margin-top:10px;overflow-x:auto}
 .axis-preview-label{font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700}
 
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--dark);border:1px solid var(--red);border-radius:3px;padding:7px 14px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#eee;pointer-events:none;z-index:9999;opacity:0;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* Context menu */
 .ctx-menu{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:4px 0;min-width:140px;z-index:5000;box-shadow:0 4px 20px rgba(0,0,0,.15)}
 .ctx-item{padding:6px 14px;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;color:var(--text2);transition:background .1s}
@@ -261,6 +265,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 <!-- DRAG GHOST -->
 <div class="drag-ghost" id="drag-ghost" style="display:none">Bloque</div>
 <div class="tooltip" id="tooltip"></div>
+<div class="toast" id="toast"></div>
 
 <!-- CONTEXT MENU -->
 <div class="ctx-menu" id="ctx-menu" style="display:none">
@@ -322,8 +327,49 @@ if (typeof Office !== 'undefined') {
       _officeReady = true;
       const btn = document.getElementById('btn-insert-slide');
       if (btn) btn.style.display = 'flex';
+      Office.context.document.addHandlerAsync(
+        Office.EventType.DocumentSelectionChanged,
+        onPPTSelectionChanged
+      );
     }
   });
+}
+
+async function onPPTSelectionChanged() {
+  if (!_officeReady || typeof PowerPoint === 'undefined') return;
+  try {
+    await PowerPoint.run(async context => {
+      const shapes = context.presentation.getSelectedShapes();
+      shapes.load('items');
+      await context.sync();
+      if (shapes.items.length !== 1) return;
+      const shape = shapes.items[0];
+      shape.tags.load('items');
+      await context.sync();
+      const tag = shape.tags.items.find(t => t.key === 'FLOWBOARD_STATE');
+      if (!tag) return;
+      const saved = JSON.parse(tag.value);
+      state.rows       = saved.rows;
+      state.blocks     = saved.blocks;
+      state.vlines     = saved.vlines;
+      state.axisLevels = saved.axisLevels;
+      state.nextId     = saved.nextId  || state.nextId;
+      state.zoom       = saved.zoom    || 1;
+      state.selectedId = null;
+      state.history    = [];
+      if (saved.title !== undefined) document.getElementById('diagram-title').value = saved.title;
+      render();
+      showToast('Diagrama cargado desde PPT');
+    });
+  } catch (e) { /* API no disponible o forma sin etiqueta — ignorar */ }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 // ── HELPERS ───────────────────────────────────
@@ -1219,6 +1265,24 @@ async function insertIntoSlide() {
         imageTop: 0.5, imageWidth: rawW * factor, imageHeight: rawH * factor
       }, r => r.status === Office.AsyncResultStatus.Failed ? reject(new Error(r.error.message)) : resolve());
     });
+    // Etiquetar la forma recién insertada con el estado para poder recuperarlo al hacer clic
+    if (typeof PowerPoint !== 'undefined') {
+      try {
+        await PowerPoint.run(async context => {
+          const shapes = context.presentation.getSelectedShapes();
+          shapes.load('items');
+          await context.sync();
+          if (shapes.items.length === 1) {
+            shapes.items[0].tags.add('FLOWBOARD_STATE', JSON.stringify({
+              rows: state.rows, blocks: state.blocks, vlines: state.vlines,
+              axisLevels: state.axisLevels, nextId: state.nextId, zoom: state.zoom,
+              title: document.getElementById('diagram-title').value.trim()
+            }));
+            await context.sync();
+          }
+        });
+      } catch (e) { /* Tags no soportados — ignorar */ }
+    }
   } catch (err) { alert('Error al insertar:\n' + err.message); }
   finally { if (btn) { btn.disabled = false; btn.innerHTML = orig; } }
 }
