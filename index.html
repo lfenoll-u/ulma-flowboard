@@ -118,7 +118,7 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
 .tooltip{position:fixed;background:var(--dark);border:1px solid #444;border-radius:3px;padding:4px 8px;font-size:11px;color:#eee;pointer-events:none;z-index:9999;opacity:0;transition:opacity .15s}
 
 /* ── RIGHT PANEL (propiedades) ── */
-.panel-right{position:absolute;right:0;top:0;bottom:0;width:200px;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;transform:translateX(100%);transition:transform .2s;z-index:40;box-shadow:-4px 0 16px rgba(0,0,0,.12)}
+.panel-right{position:absolute;right:0;top:0;bottom:0;width:200px;background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;transform:translateX(100%);transition:transform .2s;z-index:60;box-shadow:-4px 0 16px rgba(0,0,0,.12)}
 .panel-right.open{transform:translateX(0)}
 .panel-right-inner{padding:12px}
 .prop-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px;margin-top:10px}
@@ -212,14 +212,10 @@ body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);disp
     Deshacer
   </button>
   <div class="tdiv"></div>
-  <button class="tbtn" onclick="zoomOut()">−</button>
-  <span class="zoom-lbl" id="zoom-lbl">100%</span>
-  <button class="tbtn" onclick="zoomIn()">+</button>
-  <div class="tdiv"></div>
   <span class="size-lbl">Col</span>
   <input class="size-inp" id="inp-cellw" type="number" min="20" max="400" step="5" placeholder="Auto" title="Ancho de columna (px)" oninput="setCellW(this.value)">
   <span class="size-lbl">Fila</span>
-  <input class="size-inp" id="inp-rowh" type="number" min="24" max="120" step="2" value="46" title="Alto de fila (px)" oninput="setRowH(this.value)">
+  <input class="size-inp" id="inp-rowh" type="number" min="24" max="200" step="2" placeholder="Auto" title="Alto de fila (px)" oninput="setRowH(this.value)">
 </div>
 
 <!-- MAIN -->
@@ -310,9 +306,8 @@ const ALL_COLORS = [...ULMA_REDS, ...GREYS];
 
 // ── ESTADO ───────────────────────────────────
 let state = {
-  zoom: 1.0,
-  cellW: null,   // null = auto
-  rowH: 46,
+  cellW: null,
+  rowH: null,
   rows: [],
   blocks: [],
   vlines: [],
@@ -363,10 +358,9 @@ async function onPPTSelectionChanged() {
       state.blocks     = saved.blocks;
       state.vlines     = saved.vlines;
       state.axisLevels = saved.axisLevels;
-      state.nextId     = saved.nextId  || state.nextId;
-      state.zoom       = saved.zoom    || 1;
-      state.cellW      = saved.cellW !== undefined ? saved.cellW : null;
-      state.rowH       = saved.rowH    || 46;
+      state.nextId = saved.nextId || state.nextId;
+      state.cellW  = saved.cellW !== undefined ? saved.cellW : null;
+      state.rowH   = saved.rowH  !== undefined ? saved.rowH  : null;
       state.selectedId = null;
       state.history    = [];
       if (saved.title !== undefined) document.getElementById('diagram-title').value = saved.title;
@@ -395,9 +389,15 @@ function getCellW() {
   const base = state.cellW
     ? state.cellW
     : Math.max(30, Math.floor(((document.getElementById('canvas-wrap') || {}).clientWidth || 800) / (getTotalCols() || 1)));
-  return Math.round(base * state.zoom);
+  return Math.round(base);
 }
-function getRowH() { return state.rowH || 46 }
+function getRowH() {
+  if (state.rowH) return state.rowH;
+  const wrap = document.getElementById('canvas-wrap');
+  const availH = wrap ? wrap.clientHeight : 300;
+  const headH = state.axisLevels.length * getLevelH();
+  return Math.max(24, Math.floor((availH - headH) / (state.rows.length || 1)));
+}
 function getLabelW(){ return 160 }
 // Altura de cada nivel del head
 function getLevelH(){ return 28 }
@@ -604,7 +604,6 @@ function render() {
   renderHead();
   renderRows();
   renderRowCtrlList();
-  updateZoomLabel();
 }
 
 function renderHead() {
@@ -923,10 +922,7 @@ function renderRowCtrlList() {
   });
 }
 
-// ── ZOOM & SCROLL ────────────────────────────
-function zoomIn()  { state.zoom = Math.min(3, +(state.zoom + 0.15).toFixed(2)); render(); }
-function zoomOut() { state.zoom = Math.max(0.3, +(state.zoom - 0.15).toFixed(2)); render(); }
-function updateZoomLabel() { document.getElementById('zoom-lbl').textContent = Math.round(state.zoom * 100) + '%'; }
+// ── SCROLL ───────────────────────────────────
 function syncScroll() {
   const sl = document.getElementById('canvas-wrap').scrollLeft;
   document.querySelectorAll('[id^="head-cells-"]').forEach(el => { el.style.transform = `translateX(-${sl}px)`; });
@@ -948,10 +944,10 @@ function undo() {
   render();
 }
 function setCellW(val) { state.cellW = val ? Math.max(20, parseInt(val)) : null; render(); }
-function setRowH(val)  { state.rowH  = val ? Math.max(24, parseInt(val)) : 46;   render(); }
+function setRowH(val)  { state.rowH  = val ? Math.max(24, parseInt(val)) : null; render(); }
 function syncSizeInputs() {
   const iw = document.getElementById('inp-cellw'); if (iw) iw.value = state.cellW || '';
-  const ih = document.getElementById('inp-rowh');  if (ih) ih.value = state.rowH  || 46;
+  const ih = document.getElementById('inp-rowh');  if (ih) ih.value = state.rowH  || '';
 }
 
 // ── KEYBOARD ─────────────────────────────────
@@ -1297,7 +1293,7 @@ async function insertIntoSlide() {
           if (shapes.items.length === 1) {
             shapes.items[0].tags.add('FLOWBOARD_STATE', JSON.stringify({
               rows: state.rows, blocks: state.blocks, vlines: state.vlines,
-              axisLevels: state.axisLevels, nextId: state.nextId, zoom: state.zoom,
+              axisLevels: state.axisLevels, nextId: state.nextId,
               cellW: state.cellW, rowH: state.rowH,
               title: document.getElementById('diagram-title').value.trim()
             }));
