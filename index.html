@@ -1265,14 +1265,18 @@ async function insertIntoSlide() {
     const exportPx     = Math.round(targetSlideW * 96); // 864px @ 96dpi base
     const canvas  = await buildGanttCanvas(2, exportPx);
     const base64  = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
-    const rawW    = canvas.width / (96 * 2);   // pulgadas reales
+    // Office.js usa PUNTOS (1 pt = 1/72 in). Diapositiva estándar = 720pt ancho.
+    const rawW    = canvas.width / (96 * 2);          // pulgadas
     const rawH    = canvas.height / (96 * 2);
     const factor  = rawW > targetSlideW ? targetSlideW / rawW : 1;
+    const wPt     = rawW * factor * 72;               // convertir a puntos
+    const hPt     = rawH * factor * 72;
+    const leftPt  = Math.max(0, (720 - wPt) / 2);    // centrado en 720pt
     await new Promise((resolve, reject) => {
       Office.context.document.setSelectedDataAsync(base64, {
         coercionType: Office.CoercionType.Image,
-        imageLeft: Math.max(0, (10 - rawW * factor) / 2),
-        imageTop: 0.5, imageWidth: rawW * factor, imageHeight: rawH * factor
+        imageLeft: leftPt, imageTop: 36,              // 36pt = 0.5in
+        imageWidth: wPt,   imageHeight: hPt
       }, r => r.status === Office.AsyncResultStatus.Failed ? reject(new Error(r.error.message)) : resolve());
     });
     // Etiquetar la forma recién insertada con el estado para poder recuperarlo al hacer clic
