@@ -560,11 +560,36 @@ function isWeekendCol(i) {
   return !!cells[i].isWeekend;
 }
 
+// ── PERSISTENCIA (localStorage) ──────────────
+function saveToStorage() {
+  try {
+    localStorage.setItem('fb_state', JSON.stringify({
+      rows: state.rows, blocks: state.blocks, vlines: state.vlines,
+      axisLevels: state.axisLevels, nextId: state.nextId,
+      cellW: state.cellW, rowH: state.rowH
+    }));
+  } catch(e) {}
+}
+function loadFromStorage() {
+  try {
+    const s = JSON.parse(localStorage.getItem('fb_state'));
+    if (!s || !s.rows || !s.rows.length) return false;
+    state.rows       = s.rows;
+    state.blocks     = s.blocks     || [];
+    state.vlines     = s.vlines     || [];
+    state.axisLevels = s.axisLevels || state.axisLevels;
+    state.nextId     = s.nextId     || state.nextId;
+    state.cellW      = s.cellW      !== undefined ? s.cellW : null;
+    state.rowH       = s.rowH       !== undefined ? s.rowH  : null;
+    return true;
+  } catch(e) { return false; }
+}
+
 // ── INIT ─────────────────────────────────────
 function init() {
-  loadExample();
+  if (!loadFromStorage()) loadExample();
   render();
-  window.addEventListener('resize', () => {});
+  window.addEventListener('resize', () => render());
 }
 
 function loadExample() {
@@ -596,6 +621,7 @@ function render() {
   renderHead();
   renderRows();
   renderRowCtrlList();
+  saveToStorage();
 }
 
 function renderHead() {
@@ -1279,23 +1305,21 @@ async function insertIntoSlide() {
         imageWidth: wPt,   imageHeight: hPt
       }, r => r.status === Office.AsyncResultStatus.Failed ? reject(new Error(r.error.message)) : resolve());
     });
-    // Etiquetar la forma recién insertada con el estado para poder recuperarlo al hacer clic
+    // Etiquetar en segundo plano — no bloqueamos la UI con await
     if (typeof PowerPoint !== 'undefined') {
-      try {
-        await PowerPoint.run(async context => {
-          const shapes = context.presentation.getSelectedShapes();
-          shapes.load('items');
+      PowerPoint.run(async context => {
+        const shapes = context.presentation.getSelectedShapes();
+        shapes.load('items');
+        await context.sync();
+        if (shapes.items.length === 1) {
+          shapes.items[0].tags.add('FLOWBOARD_STATE', JSON.stringify({
+            rows: state.rows, blocks: state.blocks, vlines: state.vlines,
+            axisLevels: state.axisLevels, nextId: state.nextId,
+            cellW: state.cellW, rowH: state.rowH
+          }));
           await context.sync();
-          if (shapes.items.length === 1) {
-            shapes.items[0].tags.add('FLOWBOARD_STATE', JSON.stringify({
-              rows: state.rows, blocks: state.blocks, vlines: state.vlines,
-              axisLevels: state.axisLevels, nextId: state.nextId,
-              cellW: state.cellW, rowH: state.rowH
-            }));
-            await context.sync();
-          }
-        });
-      } catch (e) { /* Tags no soportados — ignorar */ }
+        }
+      }).catch(() => {});
     }
   } catch (err) { alert('Error al insertar:\n' + err.message); }
   finally { if (btn) { btn.disabled = false; btn.innerHTML = orig; } }
