@@ -365,7 +365,7 @@ async function onPPTSelectionChanged() {
       state.axisLevels = saved.axisLevels;
       state.nextId     = saved.nextId  || state.nextId;
       state.zoom       = saved.zoom    || 1;
-      state.cellW      = saved.cellW   ?? null;
+      state.cellW      = saved.cellW !== undefined ? saved.cellW : null;
       state.rowH       = saved.rowH    || 46;
       state.selectedId = null;
       state.history    = [];
