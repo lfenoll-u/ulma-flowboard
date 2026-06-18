@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ULMA FlowBoard — Gantt Operativo</title>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E8110F;--red-dark:#B50D0C;--red-deep:#7A0908;
+  --dark:#1A1A1A;--bg:#F4F2EF;--surface:#FFFFFF;--surface2:#F0EEE9;--surface3:#E8E5DF;
+  --border:#D8D4CC;--border2:#C8C3BA;--text:#1A1A1A;--text2:#666;--text3:#AAA;
+  --head-bg:#1A1A1A;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.header{background:var(--dark);border-bottom:2px solid var(--red);padding:0 1rem;display:flex;align-items:center;gap:8px;height:52px;flex-shrink:0;z-index:100}
+.logo-mark{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.logo-u{width:30px;height:30px;background:var(--red);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-1px;flex-shrink:0;position:relative}
+.logo-u-inner{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:14px;height:9px;background:var(--dark);clip-path:polygon(15% 0%,85% 0%,100% 100%,0% 100%)}
+.logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:#fff;line-height:1.1}
+.logo-sub{font-size:8px;font-weight:600;letter-spacing:.16em;color:var(--red);text-transform:uppercase}
+.hdiv{width:1px;height:26px;background:#333;flex-shrink:0}
+.header-tool{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#888;white-space:nowrap}
+.header-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+.hbtn{display:flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1px solid #333;border-radius:3px;background:#252525;color:#888;cursor:pointer;transition:all .15s;white-space:nowrap}
+.hbtn:hover{border-color:#666;color:#ddd}
+.hbtn:disabled{opacity:.5;cursor:not-allowed}
+.hbtn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.hbtn.primary:hover:not(:disabled){opacity:.88}
+.diagram-title-input{padding:4px 10px;font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:.06em;background:#252525;border:1px solid #383838;border-radius:3px;color:#ddd;width:180px;transition:border-color .15s}
+.diagram-title-input:focus{outline:none;border-color:var(--red);color:#fff}
+.diagram-title-input::placeholder{color:#555}
+
+/* ── TOOLBAR ── */
+.toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 .75rem;display:flex;align-items:center;gap:6px;height:40px;flex-shrink:0;z-index:99}
+.tbtn{display:flex;align-items:center;gap:4px;padding:4px 9px;font-size:11px;font-family:'Barlow',sans-serif;font-weight:600;border:1px solid var(--border);border-radius:3px;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;white-space:nowrap}
+.tbtn:hover{background:var(--surface2);color:var(--text);border-color:var(--border2)}
+.tdiv{width:1px;height:20px;background:var(--border2);margin:0 2px;flex-shrink:0}
+.zoom-lbl{font-size:10px;color:var(--text2);min-width:34px;text-align:center;font-weight:600}
+
+/* ── LAYOUT ── */
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* ── LEFT PANEL ── */
+.panel-left{width:200px;min-width:200px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.panel-section{padding:10px;border-bottom:1px solid var(--border)}
+.panel-title{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--red);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.panel-title::before{content:'';display:block;width:2px;height:9px;background:var(--red)}
+
+/* Draggable elements */
+.elem-list{display:flex;flex-direction:column;gap:6px}
+.elem-item{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--border);border-radius:3px;background:var(--surface2);cursor:grab;user-select:none;transition:all .12s}
+.elem-item:hover{border-color:var(--border2);background:var(--surface3)}
+.elem-item:active{cursor:grabbing}
+.elem-preview-block{width:32px;height:16px;border-radius:2px;flex-shrink:0}
+.elem-preview-vline{width:32px;height:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.elem-preview-vline::after{content:'';display:block;width:0;height:14px;border-left:2px dashed var(--red)}
+.elem-label{font-size:11px;font-weight:600;color:var(--text2);font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.05em}
+
+/* Row management */
+.row-ctrl-list{display:flex;flex-direction:column;gap:3px}
+.row-ctrl-item{display:flex;align-items:center;gap:4px;padding:3px 4px;border-radius:3px}
+.row-ctrl-item .handle{cursor:grab;color:var(--text3);flex-shrink:0;font-size:13px;line-height:1}
+.row-ctrl-item input.row-name-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:11px;font-family:'Barlow',sans-serif;padding:0;min-width:0}
+.row-ctrl-item input.row-name-inp:focus{outline:none;color:var(--red)}
+.row-del{flex-shrink:0;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px;line-height:1}
+.row-del:hover{color:var(--red)}
+.add-row-btn{width:100%;padding:5px;font-size:10px;font-weight:600;font-family:'Barlow',sans-serif;background:transparent;border:1px dashed var(--border2);color:var(--text3);cursor:pointer;border-radius:3px;transition:all .15s;text-align:center;text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.add-row-btn:hover{border-color:var(--red);color:var(--red)}
+.panel-scroll{flex:1;overflow-y:auto}
+
+/* ── CANVAS ── */
+.canvas-wrap{flex:1;overflow:auto;position:relative;background:var(--bg)}
+
+/* ── GANTT HEAD (multinivel) ── */
+.gantt-head{position:sticky;top:0;z-index:50;background:var(--head-bg);border-bottom:2px solid var(--red)}
+.gantt-head-row{display:flex}
+.gantt-head-spacer{flex-shrink:0;border-right:1px solid #333;background:var(--head-bg)}
+.gantt-head-cells{display:flex;overflow:hidden;position:relative;flex:1}
+.gantt-head-cell{flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888;border-right:1px solid #333;border-bottom:1px solid #333;position:relative;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px}
+.gantt-head-cell.level-top{font-size:11px;color:#bbb;background:#222}
+.gantt-head-cell.weekend{background:#1e1e1e;color:#555}
+.gantt-head-cell:last-child{border-right:none}
+
+/* ── GANTT ROWS ── */
+.gantt-rows{position:relative}
+.gantt-row{display:flex;position:relative}
+.gantt-row.drag-over-row .gantt-row-cells{outline:2px solid var(--red);outline-offset:-2px}
+.gantt-row-label{flex-shrink:0;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:600;color:var(--text);border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);position:sticky;left:0;z-index:30;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-row-cells{position:relative;flex:1;overflow:hidden}
+.gantt-row-cell-bg{display:flex}
+.gantt-cell{flex-shrink:0;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background .1s}
+.gantt-cell:hover{background:rgba(232,17,15,.04)}
+.gantt-cell.weekend{background:rgba(0,0,0,.03)}
+
+/* ── BLOCKS ── */
+.g-block{position:absolute;top:5px;height:36px;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;user-select:none;z-index:10;transition:filter .1s}
+.g-block:active{cursor:grabbing}
+.g-block:hover{filter:brightness(1.08)}
+.g-block.selected{outline:2px solid #fff;outline-offset:1px;z-index:15}
+
+/* ── VLINES ── */
+.g-vline{position:absolute;top:0;bottom:0;width:2px;z-index:20;cursor:pointer;pointer-events:all;border-left:2px dashed}
+.g-vline.selected{outline:2px solid var(--dark);outline-offset:2px}
+
+/* ── DRAG GHOST ── */
+.drag-ghost{position:fixed;pointer-events:none;z-index:9999;background:rgba(232,17,15,.15);border:2px dashed var(--red);border-radius:3px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:700;color:var(--red);font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── TOOLTIP ── */
+.tooltip{position:fixed;background:var(--dark);border:1px solid #444;border-radius:3px;padding:4px 8px;font-size:11px;color:#eee;pointer-events:none;z-index:9999;opacity:0;transition:opacity .15s}
+
+/* ── RIGHT PANEL (propiedades) ── */
+.panel-right{width:200px;min-width:200px;background:var(--surface);border-left:1px solid var(--border);flex-shrink:0;overflow-y:auto;transform:translateX(100%);transition:transform .2s;position:relative}
+.panel-right.open{transform:translateX(0)}
+.panel-right-inner{padding:12px}
+.prop-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px;margin-top:10px}
+.prop-label:first-child{margin-top:0}
+.close-panel-btn{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:16px;line-height:1;padding:2px}
+.close-panel-btn:hover{color:var(--text)}
+.del-btn{width:100%;padding:6px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:3px;cursor:pointer;transition:all .15s;margin-top:10px}
+.del-btn:hover{background:var(--red);color:#fff}
+
+/* Color swatches */
+.swatch-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.swatch{width:100%;aspect-ratio:1;border-radius:2px;cursor:pointer;border:2px solid transparent;transition:border-color .1s}
+.swatch.active{border-color:#fff !important}
+.swatch-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin:6px 0 3px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:4px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:1.25rem}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-btns{display:flex;gap:6px;justify-content:flex-end;margin-top:14px}
+.mbtn{padding:6px 14px;font-size:11px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:var(--surface2);color:var(--text2);transition:all .15s}
+.mbtn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.mbtn:hover:not(.primary){border-color:var(--border2);color:var(--text)}
+.mbtn.primary:hover{opacity:.88}
+
+/* Axis modal */
+.axis-levels{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.axis-level{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:10px 12px}
+.axis-level-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.axis-level-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--red);flex:1}
+.axis-level-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;line-height:1}
+.axis-level-del:hover{color:var(--red)}
+.axis-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.axis-field label{display:block;font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.axis-field select,.axis-field input{width:100%;padding:4px 6px;font-size:11px;font-family:'Barlow',sans-serif;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:3px}
+.axis-field select:focus,.axis-field input:focus{outline:none;border-color:var(--red)}
+.add-level-btn{width:100%;padding:6px;font-size:10px;font-weight:600;font-family:'Barlow',sans-serif;background:transparent;border:1px dashed var(--border2);color:var(--text3);cursor:pointer;border-radius:3px;transition:all .15s;text-align:center;text-transform:uppercase;letter-spacing:.06em}
+.add-level-btn:hover{border-color:var(--red);color:var(--red)}
+.axis-preview{background:var(--dark);border-radius:3px;padding:8px;margin-top:10px;overflow-x:auto}
+.axis-preview-label{font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700}
+
+/* Context menu */
+.ctx-menu{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:4px 0;min-width:140px;z-index:5000;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.ctx-item{padding:6px 14px;font-size:11px;font-family:'Barlow',sans-serif;cursor:pointer;color:var(--text2);transition:background .1s}
+.ctx-item:hover{background:var(--surface2);color:var(--text)}
+.ctx-item.danger{color:var(--red)}
+.ctx-item.danger:hover{background:#FDECEA}
+.ctx-div{height:1px;background:var(--border);margin:3px 0}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo-mark">
+    <div class="logo-u">U<div class="logo-u-inner"></div></div>
+    <div class="logo-text">ULMA<div class="logo-sub">Handling Systems</div></div>
+  </div>
+  <div class="hdiv"></div>
+  <div class="header-tool">FlowBoard</div>
+  <div class="hdiv"></div>
+  <input class="diagram-title-input" id="diagram-title" type="text" placeholder="Nombre del diagrama…" maxlength="80">
+  <div class="header-actions">
+    <button class="hbtn primary" id="btn-insert-slide" style="display:none" onclick="insertIntoSlide()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="12" rx="1" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Insertar en PPT
+    </button>
+    <button class="hbtn" id="btn-export-png" onclick="exportPNG()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      PNG
+    </button>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <button class="tbtn" onclick="openAxisModal()">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M1 8h14M1 4h14M1 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    Eje temporal
+  </button>
+  <div class="tdiv"></div>
+  <button class="tbtn" onclick="undo()" title="Ctrl+Z">
+    <svg width="12" height="12" viewBox="0 0 16 16"><path d="M3 9a5 5 0 105-5H3M3 9L1 6M3 9l2-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Deshacer
+  </button>
+  <div class="tdiv"></div>
+  <button class="tbtn" onclick="zoomOut()">−</button>
+  <span class="zoom-lbl" id="zoom-lbl">100%</span>
+  <button class="tbtn" onclick="zoomIn()">+</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <!-- Elementos arrastrables -->
+    <div class="panel-section">
+      <div class="panel-title">Elementos</div>
+      <div class="elem-list">
+        <div class="elem-item" draggable="true" ondragstart="elemDragStart(event,'block')">
+          <div class="elem-preview-block" style="background:var(--red)"></div>
+          <span class="elem-label">Bloque</span>
+        </div>
+        <div class="elem-item" draggable="true" ondragstart="elemDragStart(event,'vline')">
+          <div class="elem-preview-vline"></div>
+          <span class="elem-label">Línea</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filas -->
+    <div class="panel-section panel-scroll" style="flex:1;overflow-y:auto">
+      <div class="panel-title">Filas</div>
+      <div class="row-ctrl-list" id="row-ctrl-list"></div>
+      <button class="add-row-btn" onclick="addRow()">+ Añadir fila</button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap" id="canvas-wrap" onscroll="syncScroll()">
+    <div id="gantt-outer">
+      <div id="gantt-ui">
+        <div class="gantt-head" id="gantt-head"></div>
+        <div class="gantt-rows" id="gantt-rows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right" id="panel-right">
+    <div class="panel-right-inner">
+      <button class="close-panel-btn" onclick="deselectAll()">✕</button>
+      <div class="panel-title" style="margin-bottom:10px">Propiedades</div>
+      <div id="prop-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAG GHOST -->
+<div class="drag-ghost" id="drag-ghost" style="display:none">Bloque</div>
+<div class="tooltip" id="tooltip"></div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctx-menu" style="display:none">
+  <div class="ctx-item" onclick="ctxDuplicate()">Duplicar</div>
+  <div class="ctx-div"></div>
+  <div class="ctx-item danger" onclick="ctxDelete()">Eliminar</div>
+</div>
+
+<!-- AXIS MODAL -->
+<div class="modal-overlay" id="axis-modal">
+  <div class="modal">
+    <div class="modal-title">
+      Configurar eje temporal
+      <button class="modal-close" onclick="closeAxisModal()">✕</button>
+    </div>
+    <div class="axis-levels" id="axis-levels"></div>
+    <button class="add-level-btn" onclick="addAxisLevel()">+ Añadir nivel</button>
+    <div class="axis-preview">
+      <div class="axis-preview-label">Vista previa</div>
+      <div id="axis-preview-render" style="display:flex;flex-direction:column;gap:2px"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn" onclick="closeAxisModal()">Cancelar</button>
+      <button class="mbtn primary" onclick="applyAxisConfig()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── COLORES ───────────────────────────────────
+const ULMA_REDS  = ['#E8110F','#C50E0C','#A00B0A','#7A0908','#F05250','#F8A09F','#FDECEA'];
+const GREYS      = ['#1A1A1A','#333333','#555555','#777777','#999999','#BBBBBB','#DDDDDD'];
+const ALL_COLORS = [...ULMA_REDS, ...GREYS];
+
+// ── ESTADO ───────────────────────────────────
+let state = {
+  zoom: 1.0,
+  rows: [],
+  blocks: [],
+  vlines: [],
+  selectedId: null,
+  nextId: 1,
+  history: [],
+  // Eje temporal: array de niveles, de mayor a menor granularidad
+  // type: 'semana' | 'dia' | 'hora'
+  // Para 'dia' y 'semana': startDate (YYYY-MM-DD), count
+  // Para 'hora': startHour (0-23), endHour (1-24), startDate
+  axisLevels: [
+    { type: 'dia',  startDate: todayStr(), count: 2,  labelMode: 'relativo' },
+    { type: 'hora', startDate: todayStr(), startHour: 13, endHour: 24, step: 1, count: 2, labelMode: 'relativo' }
+  ]
+};
+
+// ── OFFICE.JS ────────────────────────────────
+let _officeReady = false;
+if (typeof Office !== 'undefined') {
+  Office.onReady(info => {
+    if (info.host === Office.HostType.PowerPoint || info.host === null) {
+      _officeReady = true;
+      const btn = document.getElementById('btn-insert-slide');
+      if (btn) btn.style.display = 'flex';
+    }
+  });
+}
+
+// ── HELPERS ───────────────────────────────────
+function uid()    { return 'id-' + (state.nextId++) }
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function getCellW() {
+  const wrap = document.getElementById('canvas-wrap');
+  const availW = wrap ? wrap.clientWidth : 800;
+  const cols = getTotalCols() || 1;
+  const baseW = Math.max(30, Math.floor(availW / cols));
+  return Math.round(baseW * state.zoom);
+}
+function getRowH()  { return 46 }
+function getLabelW(){ return 160 }
+// Altura de cada nivel del head
+function getLevelH(){ return 28 }
+
+// ── AXIS HELPERS ──────────────────────────────
+// Devuelve array de {label, span (en celdas)} para el nivel más bajo (bottom)
+// y los superiores agrupados en su equivalente de celdas del nivel bottom.
+
+function getBottomCells(levels) {
+  levels = levels || state.axisLevels;
+  const bottom = levels[levels.length - 1];
+  const level  = Object.assign({}, bottom);
+  // Si el nivel inferior es 'hora' y hay un nivel 'dia' encima,
+  // ese 'dia' controla cuántos días y la fecha de inicio.
+  if (level.type === 'hora') {
+    const diaLevel = levels.find(l => l.type === 'dia');
+    if (diaLevel) {
+      level.count     = diaLevel.count     || 1;
+      level.startDate = diaLevel.startDate || level.startDate;
+    }
+  }
+  return buildLevelCells(level);
+}
+
+function buildLevelCells(level) {
+  const relativo = level.labelMode !== 'fecha';
+
+  if (level.type === 'hora') {
+    const cells = [];
+    const sh   = level.startHour || 0;
+    const eh   = level.endHour   || 24;
+    const step = level.step      || 1;
+    const d    = new Date((level.startDate || todayStr()) + 'T00:00:00');
+    const totalDays = level.count || 1;
+    for (let day = 0; day < totalDays; day++) {
+      const dd = new Date(d); dd.setDate(dd.getDate() + day);
+      for (let h = sh; h < eh; h += step) {
+        let label;
+        if (relativo) {
+          // Etiqueta relativa: hora dentro del día (ej. 13:00, 15:00…)
+          label = String(h).padStart(2,'0') + ':00';
+        } else {
+          label = String(h).padStart(2,'0') + ':00';
+        }
+        cells.push({ label, date: dd, hour: h, dayOffset: day });
+      }
+    }
+    return cells;
+  }
+
+  if (level.type === 'dia') {
+    const cells = [];
+    const d    = new Date((level.startDate || todayStr()) + 'T00:00:00');
+    const days = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    for (let i = 0; i < (level.count || 7); i++) {
+      const dd  = new Date(d); dd.setDate(dd.getDate() + i);
+      const isWe = dd.getDay() === 0 || dd.getDay() === 6;
+      const label = relativo
+        ? (i === 0 ? 'D' : 'D+' + i)
+        : days[dd.getDay()] + ' ' + dd.getDate() + '/' + String(dd.getMonth()+1).padStart(2,'0');
+      cells.push({ label, date: dd, isWeekend: isWe });
+    }
+    return cells;
+  }
+
+  if (level.type === 'semana') {
+    const cells = [];
+    const d = new Date((level.startDate || todayStr()) + 'T00:00:00');
+    for (let i = 0; i < (level.count || 4); i++) {
+      const dd = new Date(d); dd.setDate(dd.getDate() + i * 7);
+      const label = relativo
+        ? (i === 0 ? 'S' : 'S+' + i)
+        : 'Sem ' + getISOWeek(dd);
+      cells.push({ label, date: dd });
+    }
+    return cells;
+  }
+  return [];
+}
+
+// Para cada nivel superior, agrupa en spans sobre las celdas del nivel inferior
+function buildUpperLevelGroups(levelIdx, bottomCells) {
+  const level   = state.axisLevels[levelIdx];
+  const bottom  = state.axisLevels[state.axisLevels.length - 1];
+
+  if (level.type === bottom.type) return bottomCells.map(c => ({ label: c.label, span: 1, isWeekend: c.isWeekend }));
+
+  if (level.type === 'semana') {
+    // Agrupar por semana ISO
+    const groups = [];
+    if (bottom.type === 'dia') {
+      let cur = null, span = 0;
+      bottomCells.forEach(c => {
+        const d = c.date;
+        // Número de semana ISO simplificado
+        const weekNum = getISOWeek(d);
+        const key = d.getFullYear() + '-W' + weekNum;
+        if (cur !== key) {
+          if (cur !== null) groups.push({ label: 'Sem ' + getISOWeek(new Date(cur.split('-W')[0] + '-01-01')), span });
+          cur = key; span = 1;
+        } else { span++; }
+      });
+      if (cur !== null) groups.push({ label: 'Sem ' + cur.split('-W')[1], span });
+      return groups;
+    }
+    if (bottom.type === 'hora') {
+      // Agrupar días completos
+      let curDay = null, span = 0;
+      const hoursPerDay = (bottom.endHour || 24) - (bottom.startHour || 0);
+      const dayMap = {};
+      bottomCells.forEach(c => {
+        const key = c.date.toISOString().slice(0,10);
+        if (!dayMap[key]) dayMap[key] = { date: c.date, count: 0 };
+        dayMap[key].count++;
+      });
+      const days = Object.values(dayMap);
+      const weekGroups = [];
+      let weekKey = null, wspan = 0;
+      days.forEach(({ date, count }) => {
+        const wk = getISOWeek(date);
+        if (weekKey !== wk) {
+          if (weekKey !== null) weekGroups.push({ label: 'Sem ' + weekKey, span: wspan });
+          weekKey = wk; wspan = count;
+        } else { wspan += count; }
+      });
+      if (weekKey !== null) weekGroups.push({ label: 'Sem ' + weekKey, span: wspan });
+      return weekGroups;
+    }
+  }
+
+  if (level.type === 'dia') {
+    if (bottom.type === 'hora') {
+      const relativo = level.labelMode !== 'fecha';
+      const dayMap = {}, order = [];
+      bottomCells.forEach(c => {
+        const key = c.date.toISOString().slice(0,10);
+        if (!dayMap[key]) { dayMap[key] = { count: 0, date: c.date, isWeekend: c.date.getDay()===0||c.date.getDay()===6 }; order.push(key); }
+        dayMap[key].count++;
+      });
+      const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      order.forEach((k, idx) => {
+        const d = dayMap[k].date;
+        dayMap[k].label = relativo
+          ? (idx === 0 ? 'D' : 'D+' + idx)
+          : dayNames[d.getDay()] + ' ' + d.getDate() + '/' + String(d.getMonth()+1).padStart(2,'0');
+      });
+      return order.map(k => ({ label: dayMap[k].label, span: dayMap[k].count, isWeekend: dayMap[k].isWeekend }));
+    }
+    if (bottom.type === 'semana') {
+      return bottomCells.map(c => ({ label: c.label, span: 1 }));
+    }
+  }
+
+  return bottomCells.map(c => ({ label: c.label, span: 1 }));
+}
+
+function getISOWeek(d) {
+  const date = new Date(d); date.setHours(0,0,0,0);
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return 1 + Math.round(((date - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
+
+function getTotalCols() { return getBottomCells().length }
+function isWeekendCol(i) {
+  const cells = getBottomCells();
+  if (!cells[i]) return false;
+  return !!cells[i].isWeekend;
+}
+
+// ── INIT ─────────────────────────────────────
+function init() {
+  loadExample();
+  render();
+  window.addEventListener('resize', () => {});
+}
+
+function loadExample() {
+  state.rows = [
+    { id: uid(), name: 'Recepción de pedidos' },
+    { id: uid(), name: 'Decanting' },
+    { id: uid(), name: 'Preparación de pedidos' },
+    { id: uid(), name: 'Expedición / Carga camión' },
+  ];
+  const [r0,r1,r2,r3] = state.rows.map(r => r.id);
+  state.blocks = [
+    mkB(r0, 0, 2, '#777777'),
+    mkB(r1, 1, 6, '#E8110F'),
+    mkB(r2, 1, 9, '#C50E0C'),
+    mkB(r3, 3, 4, '#999999'),
+  ];
+  state.vlines = [ mkV(2, '#E8110F') ];
+}
+
+function mkB(rowId, col, span, color) {
+  return { id: uid(), rowId, col, span, color };
+}
+function mkV(col, color) {
+  return { id: uid(), col, color };
+}
+
+// ── RENDER ───────────────────────────────────
+function render() {
+  renderHead();
+  renderRows();
+  renderRowCtrlList();
+  updateZoomLabel();
+}
+
+function renderHead() {
+  const cw = getCellW(), lw = getLabelW(), lh = getLevelH();
+  const head = document.getElementById('gantt-head');
+  head.innerHTML = '';
+  const bottomCells = getBottomCells();
+  const totalCols = bottomCells.length;
+
+  state.axisLevels.forEach((level, li) => {
+    const isBottom = li === state.axisLevels.length - 1;
+    const row = document.createElement('div');
+    row.className = 'gantt-head-row';
+    row.style.height = lh + 'px';
+
+    const spacer = document.createElement('div');
+    spacer.className = 'gantt-head-spacer';
+    spacer.style.width = lw + 'px';
+    spacer.style.height = lh + 'px';
+    row.appendChild(spacer);
+
+    const cellsWrap = document.createElement('div');
+    cellsWrap.className = 'gantt-head-cells';
+    cellsWrap.style.height = lh + 'px';
+    cellsWrap.id = 'head-cells-' + li;
+
+    const groups = isBottom ? bottomCells.map(c => ({ label: c.label, span: 1, isWeekend: c.isWeekend }))
+                             : buildUpperLevelGroups(li, bottomCells);
+
+    groups.forEach(g => {
+      const c = document.createElement('div');
+      c.className = 'gantt-head-cell' + (!isBottom ? ' level-top' : '') + (g.isWeekend ? ' weekend' : '');
+      c.style.width = (g.span * cw) + 'px';
+      c.style.height = lh + 'px';
+      c.textContent = g.label;
+      cellsWrap.appendChild(c);
+    });
+
+    row.appendChild(cellsWrap);
+    head.appendChild(row);
+  });
+}
+
+function renderRows() {
+  const cw = getCellW(), rh = getRowH(), lw = getLabelW();
+  const totalCols = getTotalCols();
+  const container = document.getElementById('gantt-rows');
+  container.innerHTML = '';
+
+  state.rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'gantt-row';
+    rowEl.dataset.rowid = row.id;
+    rowEl.style.height = rh + 'px';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'gantt-row-label';
+    lbl.style.width = lw + 'px';
+    lbl.style.height = rh + 'px';
+    lbl.textContent = row.name;
+    rowEl.appendChild(lbl);
+
+    const cells = document.createElement('div');
+    cells.className = 'gantt-row-cells';
+    cells.style.height = rh + 'px';
+
+    const bg = document.createElement('div');
+    bg.className = 'gantt-row-cell-bg';
+    for (let i = 0; i < totalCols; i++) {
+      const c = document.createElement('div');
+      c.className = 'gantt-cell' + (isWeekendCol(i) ? ' weekend' : '');
+      c.style.width = cw + 'px';
+      c.style.height = rh + 'px';
+      bg.appendChild(c);
+    }
+    cells.appendChild(bg);
+
+    // Vlines
+    state.vlines.forEach(v => {
+      const vEl = document.createElement('div');
+      vEl.className = 'g-vline' + (v.id === state.selectedId ? ' selected' : '');
+      vEl.style.left = (v.col * cw + cw / 2 - 1) + 'px';
+      vEl.style.borderColor = v.color;
+      vEl.onclick = e => { e.stopPropagation(); selectElement(v.id); };
+      vEl.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); selectElement(v.id); showCtxMenu(e.clientX, e.clientY); };
+      vEl.onmousedown = e => { if (e.button === 0) { e.stopPropagation(); startVlineDrag(e, v); } };
+      cells.appendChild(vEl);
+    });
+
+    // Blocks for this row
+    state.blocks.filter(b => b.rowId === row.id).forEach(b => {
+      const bEl = document.createElement('div');
+      bEl.className = 'g-block' + (b.id === state.selectedId ? ' selected' : '');
+      bEl.dataset.bid = b.id;
+      bEl.style.left   = (b.col * cw) + 'px';
+      bEl.style.width  = Math.max(cw, b.span * cw) + 'px';
+      bEl.style.background = b.color;
+
+      // Resize handles
+      const rl = document.createElement('div');
+      rl.style.cssText = 'position:absolute;top:0;bottom:0;left:0;width:5px;cursor:ew-resize;z-index:16';
+      const rr = document.createElement('div');
+      rr.style.cssText = 'position:absolute;top:0;bottom:0;right:0;width:5px;cursor:ew-resize;z-index:16';
+      bEl.appendChild(rl);
+      bEl.appendChild(rr);
+
+      bEl.onclick = e => { e.stopPropagation(); selectElement(b.id); };
+      bEl.oncontextmenu = e => { e.preventDefault(); e.stopPropagation(); selectElement(b.id); showCtxMenu(e.clientX, e.clientY); };
+      bEl.onmousedown = e => {
+        if (e.button !== 0) return;
+        if (e.target === rl) { startResize(e, b, 'left'); return; }
+        if (e.target === rr) { startResize(e, b, 'right'); return; }
+        startBlockDrag(e, b);
+      };
+      cells.appendChild(bEl);
+    });
+
+    cells.ondragover  = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; };
+    cells.ondrop      = e => handleCanvasDrop(e, row.id, cells);
+    cells.onclick     = e => { if (e.target === cells || e.target.classList.contains('gantt-cell') || e.target === bg) deselectAll(); };
+
+    rowEl.appendChild(cells);
+    container.appendChild(rowEl);
+  });
+}
+
+// ── DRAG FROM PANEL ──────────────────────────
+let _dragType = null;
+function elemDragStart(e, type) {
+  _dragType = type;
+  e.dataTransfer.effectAllowed = 'copy';
+  e.dataTransfer.setData('text/plain', type);
+}
+
+function handleCanvasDrop(e, rowId, cellsEl) {
+  e.preventDefault();
+  const cw   = getCellW();
+  const rect = cellsEl.getBoundingClientRect();
+  const col  = Math.max(0, Math.min(getTotalCols() - 1, Math.floor((e.clientX - rect.left) / cw)));
+  const type = _dragType || e.dataTransfer.getData('text/plain');
+  _dragType  = null;
+  saveHistory();
+  if (type === 'vline') {
+    state.vlines.push(mkV(col, ULMA_REDS[0]));
+  } else {
+    state.blocks.push(mkB(rowId, col, 3, ULMA_REDS[0]));
+  }
+  render();
+}
+
+// ── DRAG BLOCKS ──────────────────────────────
+function snapHalf(val, cw) { return Math.round(val / (cw * 0.5)) * 0.5; }
+
+function startBlockDrag(e, b) {
+  e.preventDefault();
+  saveHistory();
+  const cw = getCellW(), rh = getRowH();
+  const origCol = b.col, origRow = b.rowId;
+  const startX = e.clientX, startY = e.clientY;
+  let lastCol = b.col, lastRow = b.rowId;
+
+  const ghost = document.getElementById('drag-ghost');
+  ghost.style.display = 'flex';
+  ghost.style.width   = (b.span * cw) + 'px';
+  ghost.style.height  = (rh - 10) + 'px';
+
+  const onMove = me => {
+    ghost.style.left = (me.clientX + 10) + 'px';
+    ghost.style.top  = (me.clientY - rh / 2) + 'px';
+    const maxCol = getTotalCols() - b.span;
+    const nc  = Math.max(0, Math.min(maxCol, snapHalf(origCol * cw + (me.clientX - startX), cw)));
+    let hovRow = origRow;
+    document.querySelectorAll('#gantt-rows .gantt-row').forEach(re => {
+      const rect = re.getBoundingClientRect();
+      if (me.clientY >= rect.top && me.clientY < rect.bottom) hovRow = re.dataset.rowid;
+    });
+    if (nc !== lastCol || hovRow !== lastRow) {
+      lastCol = nc; lastRow = hovRow;
+      b.col = nc; b.rowId = hovRow;
+      renderRows();
+    }
+  };
+  const onUp = () => {
+    ghost.style.display = 'none';
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    renderRows();
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+function startResize(e, b, side) {
+  e.preventDefault(); e.stopPropagation(); saveHistory();
+  const cw = getCellW(), startX = e.clientX, origCol = b.col, origSpan = b.span;
+  const onMove = me => {
+    const dx = me.clientX - startX;
+    if (side === 'right') {
+      b.span = Math.max(0.5, snapHalf(origSpan * cw + dx, cw));
+    } else {
+      const newLeft = Math.max(0, snapHalf(origCol * cw + dx, cw));
+      b.span = Math.max(0.5, origSpan + (origCol - newLeft));
+      b.col  = newLeft;
+    }
+    renderRows();
+  };
+  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// ── DRAG VLINES ──────────────────────────────
+function startVlineDrag(e, v) {
+  e.preventDefault(); saveHistory();
+  const cw = getCellW(), origCol = v.col, startX = e.clientX;
+  const onMove = me => {
+    const nc = Math.max(0, Math.min(getTotalCols() - 1, snapHalf(origCol * cw + (me.clientX - startX), cw)));
+    if (nc !== v.col) { v.col = nc; renderRows(); }
+  };
+  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); selectElement(v.id); };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
+
+// ── SELECTION & PROPS ────────────────────────
+function selectElement(id) { state.selectedId = id; render(); openPropsPanel(id); }
+function deselectAll()     { state.selectedId = null; document.getElementById('panel-right').classList.remove('open'); render(); }
+
+function openPropsPanel(id) {
+  document.getElementById('panel-right').classList.add('open');
+  const content = document.getElementById('prop-content');
+  const el = findElement(id);
+  if (!el) { content.innerHTML = ''; return; }
+
+  const isVline = !!state.vlines.find(v => v.id === id);
+
+  let html = '';
+  html += `<div class="prop-label">Color</div>`;
+  html += `<div class="swatch-section">— Rojo ULMA</div>`;
+  html += `<div class="swatch-grid">` + ULMA_REDS.map(c =>
+    `<div class="swatch${el.color===c?' active':''}" style="background:${c}" onclick="setPropColor('${c}',this)"></div>`
+  ).join('') + `</div>`;
+  html += `<div class="swatch-section">— Grises</div>`;
+  html += `<div class="swatch-grid">` + GREYS.map(c =>
+    `<div class="swatch${el.color===c?' active':''}" style="background:${c}" onclick="setPropColor('${c}',this)"></div>`
+  ).join('') + `</div>`;
+  html += `<button class="del-btn" onclick="deleteSelected()">Eliminar</button>`;
+  content.innerHTML = html;
+}
+
+function findElement(id) {
+  return state.blocks.find(b => b.id === id) || state.vlines.find(v => v.id === id) || null;
+}
+function setPropColor(c, sw) {
+  const el = findElement(state.selectedId);
+  if (!el) return;
+  el.color = c;
+  document.querySelectorAll('#prop-content .swatch').forEach(s => s.classList.remove('active'));
+  sw.classList.add('active');
+  render();
+}
+
+// ── CONTEXT MENU ─────────────────────────────
+function showCtxMenu(x, y) { const m = document.getElementById('ctx-menu'); m.style.display='block'; m.style.left=x+'px'; m.style.top=y+'px'; }
+function hideCtxMenu()     { document.getElementById('ctx-menu').style.display = 'none'; }
+function ctxDuplicate() {
+  const el = findElement(state.selectedId); if (!el) return; saveHistory();
+  const copy = JSON.parse(JSON.stringify(el)); copy.id = uid();
+  if (copy.col !== undefined) copy.col = Math.min(copy.col + 1, getTotalCols() - 1);
+  if (state.blocks.find(b => b.id === state.selectedId)) state.blocks.push(copy);
+  else state.vlines.push(copy);
+  state.selectedId = copy.id; hideCtxMenu(); render(); openPropsPanel(copy.id);
+}
+function ctxDelete() { deleteSelected(); hideCtxMenu(); }
+function deleteSelected() {
+  if (!state.selectedId) return; saveHistory();
+  state.blocks  = state.blocks.filter(b => b.id !== state.selectedId);
+  state.vlines  = state.vlines.filter(v => v.id !== state.selectedId);
+  deselectAll();
+}
+
+// ── ROW MANAGEMENT ───────────────────────────
+function addRow() { saveHistory(); state.rows.push({ id: uid(), name: 'Nueva fila' }); render(); }
+function deleteRow(rowId) {
+  saveHistory();
+  state.rows   = state.rows.filter(r => r.id !== rowId);
+  state.blocks = state.blocks.filter(b => b.rowId !== rowId);
+  render();
+}
+
+function renderRowCtrlList() {
+  const list = document.getElementById('row-ctrl-list');
+  list.innerHTML = '';
+  state.rows.forEach((row, i) => {
+    const item = document.createElement('div');
+    item.className = 'row-ctrl-item';
+    item.draggable = true;
+    item.innerHTML = `<span class="handle">⠿</span>`;
+    const inp = document.createElement('input');
+    inp.className = 'row-name-inp';
+    inp.value = row.name;
+    inp.onchange = e => { row.name = e.target.value; render(); };
+    item.appendChild(inp);
+    const del = document.createElement('button');
+    del.className = 'row-del'; del.textContent = '×';
+    del.onclick = () => deleteRow(row.id);
+    item.appendChild(del);
+    item.ondragstart = e => e.dataTransfer.setData('row-drag-idx', i);
+    item.ondragover  = e => e.preventDefault();
+    item.ondrop      = e => {
+      const from = parseInt(e.dataTransfer.getData('row-drag-idx')), to = i;
+      if (from === to) return; saveHistory();
+      const [r] = state.rows.splice(from, 1); state.rows.splice(to, 0, r); render();
+    };
+    list.appendChild(item);
+  });
+}
+
+// ── ZOOM & SCROLL ────────────────────────────
+function zoomIn()  { state.zoom = Math.min(3, +(state.zoom + 0.15).toFixed(2)); render(); }
+function zoomOut() { state.zoom = Math.max(0.3, +(state.zoom - 0.15).toFixed(2)); render(); }
+function updateZoomLabel() { document.getElementById('zoom-lbl').textContent = Math.round(state.zoom * 100) + '%'; }
+function syncScroll() {
+  const sl = document.getElementById('canvas-wrap').scrollLeft;
+  document.querySelectorAll('[id^="head-cells-"]').forEach(el => { el.style.transform = `translateX(-${sl}px)`; });
+}
+
+// ── UNDO ─────────────────────────────────────
+function saveHistory() {
+  state.history.push(JSON.stringify({ rows: state.rows, blocks: state.blocks, vlines: state.vlines }));
+  if (state.history.length > 60) state.history.shift();
+}
+function undo() {
+  if (!state.history.length) return;
+  const p = JSON.parse(state.history.pop());
+  state.rows = p.rows; state.blocks = p.blocks; state.vlines = p.vlines;
+  state.selectedId = null; render();
+}
+
+// ── KEYBOARD ─────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { deselectAll(); hideCtxMenu(); }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && document.activeElement.tagName !== 'INPUT') deleteSelected();
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+  if (e.ctrlKey && e.key === 'd') { e.preventDefault(); ctxDuplicate(); }
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.ctx-menu') && !e.target.closest('.g-block') && !e.target.closest('.g-vline')) hideCtxMenu();
+});
+
+// ── AXIS MODAL ───────────────────────────────
+let _axisTemp = []; // copia temporal mientras se edita
+
+function openAxisModal() {
+  _axisTemp = JSON.parse(JSON.stringify(state.axisLevels));
+  renderAxisModal();
+  document.getElementById('axis-modal').classList.add('open');
+}
+function closeAxisModal() {
+  document.getElementById('axis-modal').classList.remove('open');
+}
+function applyAxisConfig() {
+  state.axisLevels = JSON.parse(JSON.stringify(_axisTemp));
+  closeAxisModal();
+  render();
+}
+
+function addAxisLevel() {
+  _axisTemp.push({ type: 'dia', startDate: todayStr(), count: 7 });
+  renderAxisModal();
+}
+
+function removeAxisLevel(i) {
+  if (_axisTemp.length <= 1) return;
+  _axisTemp.splice(i, 1);
+  renderAxisModal();
+}
+
+function renderAxisModal() {
+  const wrap = document.getElementById('axis-levels');
+  wrap.innerHTML = '';
+
+  _axisTemp.forEach((level, i) => {
+    const div = document.createElement('div');
+    div.className = 'axis-level';
+
+    const header = document.createElement('div');
+    header.className = 'axis-level-header';
+    header.innerHTML = `<span class="axis-level-title">Nivel ${i + 1} ${i === _axisTemp.length - 1 ? '(más detallado)' : '(agrupador)'}</span>`;
+    if (_axisTemp.length > 1) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'axis-level-del'; delBtn.textContent = '✕';
+      delBtn.onclick = () => removeAxisLevel(i);
+      header.appendChild(delBtn);
+    }
+    div.appendChild(header);
+
+    const fields = document.createElement('div');
+    fields.className = 'axis-fields';
+
+    // Tipo
+    const typeField = document.createElement('div');
+    typeField.className = 'axis-field';
+    typeField.innerHTML = `<label>Tipo</label>`;
+    const typeSelect = document.createElement('select');
+    ['hora','dia','semana'].forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      if (level.type === t) o.selected = true;
+      typeSelect.appendChild(o);
+    });
+    typeSelect.onchange = e => {
+      _axisTemp[i].type = e.target.value;
+      // Defaults según tipo
+      if (e.target.value === 'hora') { _axisTemp[i].startHour = 8; _axisTemp[i].endHour = 20; _axisTemp[i].count = 1; }
+      if (e.target.value === 'dia')  { _axisTemp[i].count = 7; }
+      if (e.target.value === 'semana') { _axisTemp[i].count = 4; }
+      renderAxisModal();
+    };
+    typeField.appendChild(typeSelect);
+    fields.appendChild(typeField);
+
+    // Fecha de inicio
+    const dateField = document.createElement('div');
+    dateField.className = 'axis-field';
+    dateField.innerHTML = `<label>Fecha inicio</label>`;
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date'; dateInput.value = level.startDate || todayStr();
+    dateInput.onchange = e => { _axisTemp[i].startDate = e.target.value; renderAxisModal(); };
+    dateField.appendChild(dateInput);
+    fields.appendChild(dateField);
+
+    // Etiqueta (relativo / fecha) — común a todos los tipos
+    const lblField = document.createElement('div');
+    lblField.className = 'axis-field';
+    lblField.innerHTML = `<label>Etiqueta</label>`;
+    const lblSel = document.createElement('select');
+    [['relativo','Relativa (D, D+1…)'],['fecha','Fecha exacta']].forEach(([v,t]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = t;
+      if ((level.labelMode || 'relativo') === v) o.selected = true;
+      lblSel.appendChild(o);
+    });
+    lblSel.onchange = e => { _axisTemp[i].labelMode = e.target.value; renderAxisModal(); };
+    lblField.appendChild(lblSel); fields.appendChild(lblField);
+
+    if (level.type === 'hora') {
+      // Hora inicio
+      const sh = document.createElement('div');
+      sh.className = 'axis-field';
+      sh.innerHTML = `<label>Hora inicio</label>`;
+      const shInput = document.createElement('input');
+      shInput.type = 'number'; shInput.min = 0; shInput.max = 23; shInput.value = level.startHour ?? 8;
+      shInput.onchange = e => { _axisTemp[i].startHour = parseInt(e.target.value); renderAxisModal(); };
+      sh.appendChild(shInput); fields.appendChild(sh);
+
+      // Hora fin
+      const eh = document.createElement('div');
+      eh.className = 'axis-field';
+      eh.innerHTML = `<label>Hora fin</label>`;
+      const ehInput = document.createElement('input');
+      ehInput.type = 'number'; ehInput.min = 1; ehInput.max = 24; ehInput.value = level.endHour ?? 20;
+      ehInput.onchange = e => { _axisTemp[i].endHour = parseInt(e.target.value); renderAxisModal(); };
+      eh.appendChild(ehInput); fields.appendChild(eh);
+
+      // Paso
+      const stepF = document.createElement('div');
+      stepF.className = 'axis-field';
+      stepF.innerHTML = `<label>Paso (h)</label>`;
+      const stepSel = document.createElement('select');
+      [1,2,4,6,12].forEach(v => {
+        const o = document.createElement('option'); o.value = v; o.textContent = v + 'h';
+        if ((level.step || 1) === v) o.selected = true;
+        stepSel.appendChild(o);
+      });
+      stepSel.onchange = e => { _axisTemp[i].step = parseInt(e.target.value); renderAxisModal(); };
+      stepF.appendChild(stepSel); fields.appendChild(stepF);
+
+      // Nº días: solo si NO hay un nivel 'dia' que ya lo controle
+      const hasDiaLevel = _axisTemp.some((l, li) => l.type === 'dia' && li < i);
+      if (!hasDiaLevel) {
+        const dc = document.createElement('div');
+        dc.className = 'axis-field';
+        dc.innerHTML = `<label>Nº días</label>`;
+        const dcInput = document.createElement('input');
+        dcInput.type = 'number'; dcInput.min = 1; dcInput.max = 14; dcInput.value = level.count ?? 1;
+        dcInput.onchange = e => { _axisTemp[i].count = parseInt(e.target.value); renderAxisModal(); };
+        dc.appendChild(dcInput); fields.appendChild(dc);
+      } else {
+        const info = document.createElement('div');
+        info.className = 'axis-field';
+        info.innerHTML = `<label>Nº días</label><div style="font-size:10px;color:var(--text3);padding:4px 0">Controlado por nivel Día</div>`;
+        fields.appendChild(info);
+      }
+
+    } else if (level.type === 'dia') {
+      const cnt = document.createElement('div');
+      cnt.className = 'axis-field';
+      cnt.innerHTML = `<label>Nº días</label>`;
+      const cntInput = document.createElement('input');
+      cntInput.type = 'number'; cntInput.min = 1; cntInput.max = 60; cntInput.value = level.count ?? 7;
+      cntInput.onchange = e => { _axisTemp[i].count = parseInt(e.target.value); renderAxisModal(); };
+      cnt.appendChild(cntInput); fields.appendChild(cnt);
+
+    } else if (level.type === 'semana') {
+      const cnt = document.createElement('div');
+      cnt.className = 'axis-field';
+      cnt.innerHTML = `<label>Nº semanas</label>`;
+      const cntInput = document.createElement('input');
+      cntInput.type = 'number'; cntInput.min = 1; cntInput.max = 52; cntInput.value = level.count ?? 4;
+      cntInput.onchange = e => { _axisTemp[i].count = parseInt(e.target.value); renderAxisModal(); };
+      cnt.appendChild(cntInput); fields.appendChild(cnt);
+    }
+
+    div.appendChild(fields);
+    wrap.appendChild(div);
+  });
+
+  renderAxisPreview();
+}
+
+function renderAxisPreview() {
+  const preview = document.getElementById('axis-preview-render');
+  preview.innerHTML = '';
+  // Guardar estado temporal para simular
+  const saved = state.axisLevels;
+  state.axisLevels = _axisTemp;
+  const bottomCells = getBottomCells();
+  const maxPreview = Math.min(bottomCells.length, 16);
+
+  _axisTemp.forEach((level, li) => {
+    const isBottom = li === _axisTemp.length - 1;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;height:22px;';
+    const groups = isBottom
+      ? bottomCells.slice(0, maxPreview).map(c => ({ label: c.label, span: 1 }))
+      : buildUpperLevelGroups(li, bottomCells).slice(0, maxPreview);
+
+    groups.forEach(g => {
+      const c = document.createElement('div');
+      const w = Math.max(30, g.span * 30);
+      c.style.cssText = `min-width:${w}px;max-width:${w}px;height:22px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:700;color:${isBottom?'#888':'#bbb'};border-right:1px solid #333;border-bottom:1px solid #333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 3px;background:${isBottom?'transparent':'#222'};`;
+      c.textContent = g.label;
+      row.appendChild(c);
+    });
+    if (bottomCells.length > maxPreview) {
+      const more = document.createElement('div');
+      more.style.cssText = 'padding:0 6px;display:flex;align-items:center;font-size:9px;color:#555;font-family:Barlow,sans-serif;';
+      more.textContent = '…';
+      row.appendChild(more);
+    }
+    preview.appendChild(row);
+  });
+  state.axisLevels = saved;
+}
+
+// ── CANVAS BUILD (para export) ────────────────
+async function buildGanttCanvas(scale) {
+  scale = scale || 2;
+  const cw = getCellW(), rh = getRowH(), lw = getLabelW(), lh = getLevelH();
+  const totalCols   = getTotalCols();
+  const bottomCells = getBottomCells();
+  const fullW = lw + totalCols * cw;
+  const headH = state.axisLevels.length * lh;
+  const fullH = headH + rh * state.rows.length;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = `position:fixed;top:-99999px;left:-99999px;width:${fullW}px;height:${fullH}px;overflow:visible;background:#F4F2EF;font-family:'Barlow',sans-serif;`;
+
+  // Head
+  const headEl = document.createElement('div');
+  headEl.style.cssText = `width:${fullW}px;background:#1A1A1A;border-bottom:2px solid #E8110F;`;
+
+  state.axisLevels.forEach((level, li) => {
+    const isBottom = li === state.axisLevels.length - 1;
+    const rowEl = document.createElement('div');
+    rowEl.style.cssText = `display:flex;height:${lh}px;`;
+
+    const spacer = document.createElement('div');
+    spacer.style.cssText = `width:${lw}px;flex-shrink:0;border-right:1px solid #333;`;
+    rowEl.appendChild(spacer);
+
+    const groups = isBottom
+      ? bottomCells.map(c => ({ label: c.label, span: 1, isWeekend: c.isWeekend }))
+      : buildUpperLevelGroups(li, bottomCells);
+
+    groups.forEach(g => {
+      const c = document.createElement('div');
+      c.style.cssText = `width:${g.span*cw}px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:${isBottom?10:11}px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${isBottom?'#888':'#bbb'};border-right:1px solid #333;border-bottom:1px solid #333;background:${!isBottom?'#222':g.isWeekend?'#1e1e1e':'transparent'};overflow:hidden;white-space:nowrap;`;
+      c.textContent = g.label;
+      rowEl.appendChild(c);
+    });
+    headEl.appendChild(rowEl);
+  });
+  wrap.appendChild(headEl);
+
+  // Rows
+  state.rows.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.style.cssText = `display:flex;height:${rh}px;position:relative;`;
+
+    const lbl = document.createElement('div');
+    lbl.style.cssText = `width:${lw}px;flex-shrink:0;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:600;color:#1A1A1A;border-right:1px solid #D8D4CC;border-bottom:1px solid #D8D4CC;background:#fff;font-family:'Barlow',sans-serif;white-space:nowrap;overflow:hidden;`;
+    lbl.textContent = row.name;
+    rowEl.appendChild(lbl);
+
+    const cells = document.createElement('div');
+    cells.style.cssText = `position:relative;flex:1;height:${rh}px;overflow:visible;`;
+
+    const bg = document.createElement('div');
+    bg.style.cssText = `display:flex;height:${rh}px;`;
+    for (let i = 0; i < totalCols; i++) {
+      const c = document.createElement('div');
+      c.style.cssText = `width:${cw}px;flex-shrink:0;border-right:1px solid #D8D4CC;border-bottom:1px solid #D8D4CC;background:${isWeekendCol(i)?'rgba(0,0,0,0.03)':'transparent'};`;
+      bg.appendChild(c);
+    }
+    cells.appendChild(bg);
+
+    state.vlines.forEach(v => {
+      const vEl = document.createElement('div');
+      vEl.style.cssText = `position:absolute;top:0;bottom:0;left:${v.col*cw+cw/2-1}px;width:2px;border-left:2px dashed ${v.color};z-index:20;`;
+      cells.appendChild(vEl);
+    });
+
+    state.blocks.filter(b => b.rowId === row.id).forEach(b => {
+      const bEl = document.createElement('div');
+      bEl.style.cssText = `position:absolute;top:5px;height:${rh-10}px;left:${b.col*cw}px;width:${Math.max(cw,b.span*cw)}px;border-radius:3px;background:${b.color};z-index:10;`;
+      cells.appendChild(bEl);
+    });
+
+    rowEl.appendChild(cells);
+    wrap.appendChild(rowEl);
+  });
+
+  document.body.appendChild(wrap);
+  try {
+    const h2c = await loadHtml2Canvas();
+    return await h2c(wrap, { scale, useCORS: true, allowTaint: true, backgroundColor: '#F4F2EF', width: fullW, height: fullH, logging: false });
+  } finally {
+    document.body.removeChild(wrap);
+  }
+}
+
+async function exportPNG() {
+  const title = document.getElementById('diagram-title').value.trim() || 'gantt-ulma';
+  const safe  = title.replace(/[^a-zA-Z0-9_\-áéíóúüñÁÉÍÓÚÜÑ ]/g,'').trim().replace(/\s+/g,'-') || 'gantt-ulma';
+  const canvas = await buildGanttCanvas(2);
+  const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = safe + '.png'; a.click();
+}
+
+async function insertIntoSlide() {
+  if (!_officeReady) { alert('Abre esta herramienta desde el panel de add-ins de PowerPoint.'); return; }
+  const btn = document.getElementById('btn-insert-slide');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Generando…'; }
+  try {
+    const canvas  = await buildGanttCanvas(2);
+    const base64  = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+    const dpi     = 192;
+    const rawW    = canvas.width / dpi, rawH = canvas.height / dpi;
+    const maxW    = 9.0, factor = rawW > maxW ? maxW / rawW : 1;
+    await new Promise((resolve, reject) => {
+      Office.context.document.setSelectedDataAsync(base64, {
+        coercionType: Office.CoercionType.Image,
+        imageLeft: Math.max(0, (10 - rawW * factor) / 2),
+        imageTop: 0.5, imageWidth: rawW * factor, imageHeight: rawH * factor
+      }, r => r.status === Office.AsyncResultStatus.Failed ? reject(new Error(r.error.message)) : resolve());
+    });
+  } catch (err) { alert('Error al insertar:\n' + err.message); }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = orig; } }
+}
+
+function loadHtml2Canvas() {
+  return new Promise((resolve, reject) => {
+    if (window.html2canvas) { resolve(window.html2canvas); return; }
+    const tryLoad = (src, fb) => { const s = document.createElement('script'); s.src = src; s.onload = () => resolve(window.html2canvas); s.onerror = fb; document.head.appendChild(s); };
+    tryLoad('assets/html2canvas.min.js', () => tryLoad('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => reject(new Error('No se pudo cargar html2canvas'))));
+  });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <!-- Cambia este GUID por uno nuevo generado (https://guidgenerator.com) -->
+  <Id>A9B4C5D6-E7F8-4A1B-B2C3-D4E5F6A7B8C9</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>ULMA Handling Systems</ProviderName>
+  <DefaultLocale>es-ES</DefaultLocale>
+  <DisplayName DefaultValue="ULMA FlowBoard"/>
+  <Description DefaultValue="Editor de Gantt operativo para ULMA Handling Systems. Diseña diagramas de planificación e insértalos directamente en tus diapositivas PowerPoint."/>
+
+  <!-- IMPORTANTE: sustituye lfenoll-u por tu usuario de GitHub -->
+  <IconUrl DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/assets/icon-32.svg"/>
+  <HighResolutionIconUrl DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/assets/icon-64.svg"/>
+  <SupportUrl DefaultValue="https://www.ulmahandlingsystems.com"/>
+
+  <AppDomains>
+    <AppDomain>https://lfenoll-u.github.io</AppDomain>
+    <AppDomain>https://cdnjs.cloudflare.com</AppDomain>
+    <AppDomain>https://fonts.googleapis.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Presentation"/>
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/"/>
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <!-- VersionOverrides: añade botón en el ribbon de PowerPoint -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="App.Url"/>
+          </GetStarted>
+
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="ULMA.CommandsGroup">
+                <Label resid="CommandsGroup.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ULMA.OpenPaneButton">
+                  <Label resid="OpenPane.Label"/>
+                  <Supertip>
+                    <Title resid="OpenPane.Label"/>
+                    <Description resid="OpenPane.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ULMA.FlowBoard</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/assets/icon-16.svg"/>
+        <bt:Image id="Icon.32" DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/assets/icon-32.svg"/>
+        <bt:Image id="Icon.80" DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/assets/icon-80.svg"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="App.Url"      DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://lfenoll-u.github.io/ulma-flowboard/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title"    DefaultValue="ULMA FlowBoard instalado"/>
+        <bt:String id="CommandsGroup.Label" DefaultValue="ULMA"/>
+        <bt:String id="OpenPane.Label"      DefaultValue="Gantt Operativo"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Abre el editor de Gantt Operativo desde la pestaña Inicio del ribbon."/>
+        <bt:String id="OpenPane.Tooltip"        DefaultValue="Abre el editor de Gantt Operativo de ULMA Handling Systems para diseñar e insertar diagramas en tus diapositivas."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+
+</OfficeApp>
