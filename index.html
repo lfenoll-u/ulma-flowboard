@@ -426,7 +426,7 @@ function buildLevelCells(level) {
     const totalDays = level.count || 1;
     for (let day = 0; day < totalDays; day++) {
       const dd = new Date(d); dd.setDate(dd.getDate() + day);
-      for (let h = sh; h < eh; h += step) {
+      for (let h = sh; h <= eh; h += step) {
         let label;
         if (relativo) {
           // Etiqueta relativa: hora dentro del día (ej. 13:00, 15:00…)
@@ -1289,11 +1289,12 @@ async function insertIntoSlide() {
   try {
     const targetSlideW = 9.0;   // pulgadas objetivo (diapositiva de 10in)
     const exportPx     = Math.round(targetSlideW * 96); // 864px @ 96dpi base
-    const canvas  = await buildGanttCanvas(2, exportPx);
+    const exportScale  = 3;                             // 3× para mayor nitidez
+    const canvas  = await buildGanttCanvas(exportScale, exportPx);
     const base64  = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
     // Office.js usa PUNTOS (1 pt = 1/72 in). Diapositiva estándar = 720pt ancho.
-    const rawW    = canvas.width / (96 * 2);          // pulgadas
-    const rawH    = canvas.height / (96 * 2);
+    const rawW    = canvas.width / (96 * exportScale);  // pulgadas
+    const rawH    = canvas.height / (96 * exportScale);
     const factor  = rawW > targetSlideW ? targetSlideW / rawW : 1;
     const wPt     = rawW * factor * 72;               // convertir a puntos
     const hPt     = rawH * factor * 72;
