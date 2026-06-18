@@ -1103,10 +1103,13 @@ function renderAxisPreview() {
 }
 
 // ── CANVAS BUILD (para export) ────────────────
-async function buildGanttCanvas(scale) {
+async function buildGanttCanvas(scale, exportW) {
   scale = scale || 2;
-  const cw = getCellW(), rh = getRowH(), lw = getLabelW(), lh = getLevelH();
-  const totalCols   = getTotalCols();
+  const rh = getRowH(), lw = getLabelW(), lh = getLevelH();
+  const totalCols = getTotalCols();
+  const cw = exportW
+    ? Math.max(20, Math.floor((exportW - lw) / totalCols))
+    : getCellW();
   const bottomCells = getBottomCells();
   const fullW = lw + totalCols * cw;
   const headH = state.axisLevels.length * lh;
@@ -1202,11 +1205,13 @@ async function insertIntoSlide() {
   const orig = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = 'Generando…'; }
   try {
-    const canvas  = await buildGanttCanvas(2);
+    const targetSlideW = 9.0;   // pulgadas objetivo (diapositiva de 10in)
+    const exportPx     = Math.round(targetSlideW * 96); // 864px @ 96dpi base
+    const canvas  = await buildGanttCanvas(2, exportPx);
     const base64  = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
-    const dpi     = 192;
-    const rawW    = canvas.width / dpi, rawH = canvas.height / dpi;
-    const maxW    = 9.0, factor = rawW > maxW ? maxW / rawW : 1;
+    const rawW    = canvas.width / (96 * 2);   // pulgadas reales
+    const rawH    = canvas.height / (96 * 2);
+    const factor  = rawW > targetSlideW ? targetSlideW / rawW : 1;
     await new Promise((resolve, reject) => {
       Office.context.document.setSelectedDataAsync(base64, {
         coercionType: Office.CoercionType.Image,
